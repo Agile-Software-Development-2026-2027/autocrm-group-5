@@ -5,10 +5,11 @@ AutoCRM is a custom middleware system designed to eliminate manual data entry in
 
 ## Architecture & Design
 
-The system we have thought to implement, follows an event-driven architecture designed to avoid unnecessary polling and ensure near real-time updates. The responsibilities rely both on a core/skeleton backend and an AI microservice, so detailed:
-**Spring Boot (Java) Backend:** Acts as the public webhook endpoint to receive events from [Fireflies.ai](https://fireflies.ai/) (`meeting.transcribed`), verifies security signatures (HMAC), queries the GraphQL API for the raw transcript, saves the data to the local database, and orchestrates the final REST API calls to Hubspot.
+The system we have thought to implement, follows an event-driven architecture designed to avoid unnecessary polling and ensure near real-time updates. The responsibilities rely both on a core backend and an AI microservice, detailed as follows:
 
-**Python Microservice:** Receives the raw transcript from the Java backend, formulates the prompt, interacts with the LLM to extract structured data (JSON), and validates the mapping for the CRM data model.
+* **Spring Boot (Java) Backend:** Acts as the public webhook endpoint to receive events from [Fireflies.ai](https://fireflies.ai/) (`meeting.transcribed`), verifies security signatures (HMAC), queries the GraphQL API for the raw transcript, saves the data to the local database, and orchestrates the final REST API calls to Hubspot.
+
+* **Python Microservice:** Receives the raw transcript from the Java backend, formulates the prompt, interacts with the LLM to extract structured data (JSON), and validates the mapping for the CRM data model.
 
 ```mermaid
 sequenceDiagram
@@ -35,5 +36,13 @@ sequenceDiagram
     SB->>HS: REST API POST/PATCH (Update Deal, Create Tasks)
     HS-->>SB: Confirm successful CRM update
 ```
+
+## Technology Stack
+
+* **Backend Framework:** Spring Boot (Java)
+* **AI/NLP Service:** Python (LangChain)
+* **Integrations:** Fireflies.ai (GraphQL & Webhooks), HubSpot CRM (REST API v3)
+* **CI/CD:** GitHub Actions
+
 
 
