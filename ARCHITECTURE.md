@@ -44,5 +44,11 @@ sequenceDiagram
 * **Integrations:** Fireflies.ai (GraphQL & Webhooks), HubSpot CRM (REST API v3)
 * **CI/CD:** GitHub Actions
 
+## Current WIP State (Sprint 1)
+The team is currently focused on:
+* Investigating [Fireflies.ai](https://fireflies.ai/) and HubSpot API rate limits and authentication.
+* Setting up local webhook testing endpoints.
 
+## Local Setup Instructions
+*(Instructions on how to configure the local environment, build the project, and required .env variables will be documented here as the foundational code is pushed).*
 
