@@ -1,6 +1,7 @@
-# Project name
+# AutoCRM - Revelis Integration Project
 
-One paragraph: what the project is.
+AutoCRM is a custom middleware system designed to automate the data entry workflow between Google Meet sales calls (transcribed by Fireflies.ai) and HubSpot CRM, leveraging an AI agent to extract notes, tasks, and deal updates. 
+👉 **For detailed technical documentation, diagrams, and technology stack, please see our [Architecture & Design Document](ARCHITECTURE.md).**
 
 ## How we work
 
