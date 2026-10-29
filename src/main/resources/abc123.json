@@ -1,0 +1,9 @@
+{
+  "id": "abc123",
+  "title": "Call con cliente",
+  "date": 1730196000000,
+  "sentences": [
+    { "speaker_name": "Mario", "text": "Buongiorno, partiamo dal preventivo." },
+    { "speaker_name": "Anna",  "text": "Ci serve l'integrazione con HubSpot entro dicembre." }
+  ]
+}
