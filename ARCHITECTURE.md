@@ -1,15 +1,15 @@
 # AutoCRM - Architecture & System Design 
 
 ## Project Context
-AutoCRM is a custom middleware system designed to eliminate manual data entry in HubSpot CRM for the company Revelis. It is meant to automate the workflow between sales calls and the CRM by leveraging Fireflies.ai to capture meeting calls transcriptions, and an AI agent (Large Language Model) to extract actionable business insights (such as deal stage updates, meeting notes, and task assignments), which are then automatically synchronized to HubSpot.
+AutoCRM is a custom middleware system designed to eliminate manual data entry in HubSpot CRM for the company Revelis. It is meant to automate the workflow between sales calls and the CRM by leveraging [Fireflies.ai](https://fireflies.ai/) to capture meeting calls transcriptions, and an AI agent (Large Language Model) to extract actionable business insights (such as deal stage updates, meeting notes, and task assignments), which are then automatically synchronized to HubSpot.
 
-## Architecture & Design
+## Architectural design 
 
-The system we have thought to implement, follows an event-driven architecture designed to avoid unnecessary polling and ensure near real-time updates. The responsibilities rely both on a core backend and an AI microservice, detailed as follows:
+The system we have thought to implement, follows an event-driven architecture designed to avoid unnecessary API polling and ensure near real-time updates. The responsibilities rely both on a core backend and an AI microservice, detailed as follows:
 
-* **Spring Boot (Java) Backend:** Acts as the public webhook endpoint to receive events from [Fireflies.ai](https://fireflies.ai/) (`meeting.transcribed`), verifies security signatures (HMAC), queries the GraphQL API for the raw transcript, saves the data to the local database, and orchestrates the final REST API calls to Hubspot.
+* **Spring Boot (Java) Backend:** Acts as the public webhook endpoint to receive notifications from [Fireflies.ai](https://fireflies.ai/) (`meeting.transcribed`), verifies the HMAC security signature, queries the GraphQL API to retrieve the raw transcript, securely stores the data in the system database (for backup and audit purposes), and arranges the final REST API calls to populate the HubSpot Data Model.
 
-* **Python Microservice:** Receives the raw transcript from the Java backend, formulates the prompt, interacts with the LLM to extract structured data (JSON), and validates the mapping for the CRM data model.
+* **Python Microservice:** Dedicated exclusively to AI and Natural Language Processing (NLP). It receives the raw transcript from the Java backend, formulates the prompt, interacts with the LLM (e.g., OpenAI/Anthropic) to extract structured data, and returns a strictly validated JSON payload mapped to the CRM entities (Contacts, Deals, Notes, Tasks).
 
 ```mermaid
 sequenceDiagram
