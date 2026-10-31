@@ -14,6 +14,7 @@ public class MeetingService {
 
     private final TranscriptSource transcriptSource;
 
+
     @Async
     public void processMeetingTranscript(String meetingId) { // define obj that need to recive
 
@@ -24,4 +25,9 @@ public class MeetingService {
 
         log.info(" RECIVED Transcript From Fireflies: {}", transcript);
     }
+
+    
+
+
+
 }
