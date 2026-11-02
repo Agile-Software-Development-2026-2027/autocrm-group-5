@@ -43,5 +43,3 @@ jobs:
         # Spring maps these env vars to hubspot.api.token, fireflies.api.key, fireflies.webhook.signing.secret
         env:
           HUBSPOT_API_TOKEN: ${{ secrets.HUBSPOT_API_TOKEN }}
-          FIREFLIES_API_KEY: ${{ secrets.FIREFLIES_API_KEY }}
-          FIREFLIES_WEBHOOK_SIGNING_SECRET: ${{ secrets.FIREFLIES_WEBHOOK_SIGNING_SECRET }}
