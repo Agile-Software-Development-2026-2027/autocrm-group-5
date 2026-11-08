@@ -1,10 +1,10 @@
 package it.devmethodologies.meetingingestor.controller;
-// This is the Controller Layer. Its only job is to be the "door" that receives the HTTP request from the frontend, 
-// checks if the data is valid, hands it to the Service layer, and returns the final HTTP response.
 
+// SCRUM 67: Endpoint for HubSpot approval
+
+import it.devmethodologies.meetingingestor.service.impl.HubSpotService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -20,8 +20,8 @@ public class HubSpotController {
     }
 
     // SCRUM 67: Create the backend endpoint to receive approved payloads
-    @PostMapping ("/sync")
-    public ResponseEntity> syncTranscript(@RequestBody SyncRequest request) {
+    @PostMapping("/sync")
+    public ResponseEntity<Map<String, Object>> syncTranscript(@RequestBody SyncRequest request) {
 
         // Fulfill SCRUM 67: Validate payload and reject missing/empty fields
         if (request.dealCode() == null || request.dealCode().trim().isEmpty()) {
@@ -33,16 +33,16 @@ public class HubSpotController {
 
         try {
             // Fulfill SCRUM 68: Find the deal
-            String dealId = hubSpotService.getDealIdByCode(request.dealCode());
+            String dealId = hubSpotService.findDealIdByCode(request.dealCode());
             
-            // Fulfill SCRUM 69: Create the note(s)
-            List<String> noteIds = hubSpotService.createAndAssociateNote(dealId, request.text());
+            // Fulfill SCRUM 69: Create the note
+            String noteId = hubSpotService.createAndAssociateNote(dealId, request.text());
             
             // Return the result to the frontend
             return ResponseEntity.ok(Map.of(
                 "status", "success",
                 "dealId", dealId,
-                "noteIds", noteIds
+                "noteId", noteId
             ));
             
         } catch (RuntimeException e) {
@@ -53,5 +53,4 @@ public class HubSpotController {
 
     // Simple DTO mapping the JSON from the frontend
     public record SyncRequest(String dealCode, String text) {}
-
 }
