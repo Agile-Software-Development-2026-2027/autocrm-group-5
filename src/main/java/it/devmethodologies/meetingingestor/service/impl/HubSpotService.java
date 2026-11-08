@@ -2,8 +2,10 @@ package it.devmethodologies.meetingingestor.service.impl;
 
 // SCRUM 68 AND 69 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -44,7 +46,12 @@ public class HubSpotService {
         );
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(searchBody, headers);
-        ResponseEntity<Map> response = restTemplate.postForEntity(searchUrl, request, Map.class);
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+            searchUrl,
+            HttpMethod.POST,
+            request,
+            new ParameterizedTypeReference<Map<String, Object>>() {}
+        );
 
         if (response.getBody() == null) {
             throw new IllegalArgumentException("No response received from HubSpot search API.");
@@ -65,7 +72,6 @@ public class HubSpotService {
     /**
      * SCRUM 69: Create a Note and associate it with the Deal
      */
-    @SuppressWarnings("unchecked")
     public String createAndAssociateNote(String dealId, String transcriptText) {
         String noteUrl = HUBSPOT_BASE_URL + "/notes";
 
@@ -93,7 +99,12 @@ public class HubSpotService {
         );
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(noteBody, headers);
-        ResponseEntity<Map> response = restTemplate.postForEntity(noteUrl, request, Map.class);
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+            noteUrl,
+            HttpMethod.POST,
+            request,
+            new ParameterizedTypeReference<Map<String, Object>>() {}
+        );
 
         if (response.getBody() == null || response.getBody().get("id") == null) {
             throw new IllegalStateException("Failed to create note on HubSpot.");
