@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -87,7 +88,8 @@ public class HubSpotService {
 
         Map<String, Object> noteBody = Map.of(
             "properties", Map.of(
-                "hs_note_body", safeText
+                "hs_note_body", safeText,
+                "hs_timestamp", Instant.now().toString()
             ),
             "associations", List.of(Map.of(
                 "to", Map.of("id", dealId),
