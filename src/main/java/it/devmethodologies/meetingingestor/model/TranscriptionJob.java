@@ -14,7 +14,7 @@ public record TranscriptionJob(
         Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(status, "status must not be null");
     }
-    public static  TranscriptionJob processing(String id){
+    public static TranscriptionJob processing(String id){
         Instant now = Instant.now();
         return new TranscriptionJob(id, JobStatus.PROCESSING, null, null,now, now);
     }
