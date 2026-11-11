@@ -67,7 +67,7 @@ public class TranscriptionService {
             cause = cause.getCause();
         }
         if (cause instanceof TimeoutException) {
-            return "Transcription timeout";
+            return "Transcription timed out";
         }
         if (cause.getMessage() != null) {
             return cause.getMessage();
