@@ -18,3 +18,9 @@ build-backend = "uv_build"
 
 [tool.fastapi]
 entrypoint = "transcription_service.main:app"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.2.0",
+]
