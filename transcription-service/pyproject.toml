@@ -1,0 +1,20 @@
+[project]
+name = "transcription-service"
+version = "0.1.0"
+description = ""
+readme = "README.md"
+authors = [
+    { name = "Giorgio Carlino", email = "carlinogiorgiogithub@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.162.5",
+    "whisperx>=3.8.6",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.fastapi]
+entrypoint = "transcription_service.main:app"

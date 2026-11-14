@@ -1,0 +1,19 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# WhisperX models
+models/
+
+# Secrets / local config
+.env
+*.env
+application-local.*
+application-secret.*
