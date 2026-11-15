@@ -17,3 +17,4 @@ class Settings(BaseSettings):
     batch_size: int = 4
     max_upload_mib: int = 3072
     models_dir: Path = PROJECT_ROOT / "src" / "transcription_service" / "models"
+    api_key: str = ""

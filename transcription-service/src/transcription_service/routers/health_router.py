@@ -1,6 +1,10 @@
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Depends, Response, status
 
-health_router = APIRouter(prefix="/api/v1", tags=["health"])
+from transcription_service.dependencies import require_api_key
+
+health_router = APIRouter(
+    prefix="/api/v1", tags=["health"], dependencies=[Depends(require_api_key)]
+)
 
 
 @health_router.get(

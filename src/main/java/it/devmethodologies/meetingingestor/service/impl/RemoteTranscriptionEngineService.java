@@ -2,7 +2,6 @@ package it.devmethodologies.meetingingestor.service.impl;
 
 import java.net.http.HttpClient;
 import java.nio.file.Path;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
@@ -24,9 +23,12 @@ import lombok.extern.slf4j.Slf4j;
 public class RemoteTranscriptionEngineService implements TranscriptionEngine {
     private final RestClient restClient;
 
-    @Autowired 
-    public RemoteTranscriptionEngineService(@Value("${transcription.service.url}") String baseUrl) {
-        this(buildRestClient(baseUrl));
+    @Autowired
+    public RemoteTranscriptionEngineService(
+            @Value("${transcription.service.url}") String baseUrl,
+            @Value("${transcription.service.apiKey}") String apiKey) {
+
+        this(buildRestClient(baseUrl, apiKey));
     }
 
     // used by tests to inject a mocked RestClient
@@ -34,7 +36,7 @@ public class RemoteTranscriptionEngineService implements TranscriptionEngine {
         this.restClient = restClient;
     }
 
-    private static RestClient buildRestClient(String baseUrl) {
+    private static RestClient buildRestClient(String baseUrl, String apiKey) {
         HttpClient httpClient = HttpClient.newBuilder()
                 // uvicorn only supports HTTP_1_1, HTTP_2 is experimental
                 // https://uvicorn.dev/concepts/http2/
@@ -43,6 +45,7 @@ public class RemoteTranscriptionEngineService implements TranscriptionEngine {
 
         return RestClient.builder()
                 .baseUrl(baseUrl)
+                .defaultHeader("Transcription-API-Key", apiKey)
                 .requestFactory(new JdkClientHttpRequestFactory(httpClient))
                 .build();
     }

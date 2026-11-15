@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import (
     APIRouter,
+    Depends,
     File,
     Form,
     HTTPException,
@@ -14,6 +15,7 @@ from fastapi import (
     status,
 )
 
+from transcription_service.dependencies import require_api_key
 from transcription_service.errors.model_not_loaded_error import ModelNotLoadedError
 from transcription_service.services.transcriber_service import TranscriberService
 
@@ -24,6 +26,7 @@ logger = logging.getLogger(__name__)
 transcriber_router = APIRouter(
     prefix="/api/v1/transcriptions",
     tags=["transcriber"],
+    dependencies=[Depends(require_api_key)],
 )
 
 
