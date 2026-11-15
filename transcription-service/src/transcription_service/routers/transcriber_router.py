@@ -66,7 +66,7 @@ def create_transcription(
             max_size / BYTES_PER_MIB,
         )
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="Audio file too large",
         )
 
@@ -91,7 +91,7 @@ def create_transcription(
 
     except ModelNotLoadedError:
         logger.exception("Transcription failed: filename=%r", file.filename)
-        raise HTTPException(status_code=status.HTTP_503_INTERNAL_SERVER_ERROR)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
     except Exception as e:
         logger.exception("Transcription failed: filename=%r", file.filename)
         raise HTTPException(
