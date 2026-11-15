@@ -17,3 +17,10 @@ models/
 *.env
 application-local.*
 application-secret.*
+
+# pytest-cov
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.pytest_cache/

@@ -23,4 +23,5 @@ entrypoint = "transcription_service.main:app"
 dev = [
     "httpx>=0.28.1",
     "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
 ]
