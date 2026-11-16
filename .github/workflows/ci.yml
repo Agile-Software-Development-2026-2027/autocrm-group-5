@@ -21,6 +21,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      TRANSCRIPTION_API_KEY: test-api-key
     #if one of these steps fails,
     # the job will be marked as failed and the workflow will stop
     steps:
