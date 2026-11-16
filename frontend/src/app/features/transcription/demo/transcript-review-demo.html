@@ -1,0 +1,18 @@
+<aside class="demo-panel" aria-labelledby="review-demo-title">
+  <h2 id="review-demo-title">Modalità dimostrativa locale</h2>
+  <p>
+    Dati fittizi per verificare l'editor. Nessun collegamento al backend e nessun salvataggio
+    remoto.
+  </p>
+  <div class="demo-actions">
+    <button type="button" (click)="simulateSourceUpdate()">
+      Simula aggiornamento della sorgente
+    </button>
+    <button type="button" (click)="simulateLoadError()">Simula errore di caricamento</button>
+    <button type="button" [disabled]="!loadError()" (click)="loadError.set(null)">
+      Rimuovi errore demo
+    </button>
+  </div>
+</aside>
+
+<app-transcript-review-page [transcript]="source()" [loadError]="loadError()" />

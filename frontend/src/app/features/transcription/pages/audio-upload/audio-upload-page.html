@@ -1,0 +1,59 @@
+<header class="page-header">
+  <p class="eyebrow">01 / La tua registrazione</p>
+  <h1>Audio Upload</h1>
+  <p>Trasforma una conversazione in una nota pronta per il tuo Deal.</p>
+</header>
+
+<div class="upload-workspace">
+  <section class="upload-main" aria-label="Caricamento della registrazione">
+    <app-audio-file-picker [disabled]="busy()" (fileSelected)="onFileSelected($event)" />
+    <div class="upload-actions">
+      <p>Potrai rivedere e correggere il testo prima di inviarlo.</p>
+      <button
+        [attr.aria-busy]="busy()"
+        type="button"
+        [disabled]="!selectedFile() || busy()"
+        (click)="startTranscription()"
+      >
+        Invia e trascrivi <span aria-hidden="true">→</span>
+      </button>
+    </div>
+    @if (phase() === 'uploading') {
+      <p class="upload-status" role="status">Caricamento del file in corso…</p>
+    } @else if (phase() === 'transcribing') {
+      <p class="upload-status" role="status">Trascrizione in corso…</p>
+    }
+    @if (errorMessage(); as error) {
+      <p class="upload-error" role="alert">{{ error }}</p>
+    }
+  </section>
+
+  <aside class="workflow-guide" aria-labelledby="workflow-title">
+    <p class="eyebrow">Il tuo flusso di lavoro</p>
+    <h2 id="workflow-title">Tre passi, una nota utile.</h2>
+    <ol>
+      <li>
+        <span class="step-number" aria-hidden="true">01</span>
+        <div>
+          <h3>Scegli l'audio</h3>
+          <p>Seleziona la registrazione della conversazione.</p>
+        </div>
+      </li>
+      <li>
+        <span class="step-number" aria-hidden="true">02</span>
+        <div>
+          <h3>Rivedi il testo</h3>
+          <p>Controlla la trascrizione e aggiungi le tue correzioni.</p>
+        </div>
+      </li>
+      <li>
+        <span class="step-number" aria-hidden="true">03</span>
+        <div>
+          <h3>Collega al Deal</h3>
+          <p>Conferma la destinazione e invia la nota al CRM.</p>
+        </div>
+      </li>
+    </ol>
+    <p class="guide-note">Un audio chiaro rende la revisione più semplice.</p>
+  </aside>
+</div>

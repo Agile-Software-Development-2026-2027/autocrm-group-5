@@ -1,0 +1,112 @@
+:root {
+  color-scheme: light;
+  font-family:
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  --color-ink: #192d2a;
+  --color-muted: #53665f;
+  --color-brand: #176354;
+  --color-brand-dark: #104b40;
+  --color-brand-soft: #eaf3ee;
+  --color-paper: #fff;
+  --color-bg: #f4f6f2;
+  --color-line: #dce4dc;
+  --color-control-line: #778c82;
+  --color-danger: #9e3037;
+  --color-danger-soft: #fff2f1;
+  --radius-card: 18px;
+  --shadow-card: 0 8px 30px rgb(30 56 44 / 4%);
+  color: var(--color-ink);
+  background: var(--color-bg);
+  line-height: 1.6;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+textarea {
+  font: inherit;
+}
+button,
+input,
+textarea,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a,
+label.file-button {
+  touch-action: manipulation;
+}
+button {
+  white-space: normal;
+}
+a {
+  color: var(--color-brand);
+  text-underline-offset: 0.2em;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+h1 {
+  font-size: clamp(2rem, 3.7vw, 2.85rem);
+  line-height: 1.16;
+  font-weight: 650;
+  letter-spacing: -0.045em;
+  overflow-wrap: anywhere;
+}
+h2 {
+  font-size: 1.15rem;
+  line-height: 1.4;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+h3 {
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 650;
+}
+:focus-visible {
+  outline: 3px solid var(--color-brand-dark);
+  outline-offset: 4px;
+}
+[tabindex='-1'] {
+  scroll-margin-top: 2rem;
+}
+.eyebrow {
+  margin-bottom: 0.7rem;
+  color: var(--color-brand);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.page-header {
+  margin-bottom: 2rem;
+}
+.page-header > p:last-child {
+  max-width: 44rem;
+  margin-top: 0.85rem;
+  color: var(--color-muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

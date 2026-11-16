@@ -1,0 +1,40 @@
+@if (loadError(); as error) {
+  <section class="load-error" role="alert" aria-labelledby="transcript-error-title">
+    <h2 id="transcript-error-title">Errore nel caricamento della trascrizione</h2>
+    <p id="transcript-load-error">{{ error }}</p>
+  </section>
+}
+@if (text() !== null) {
+  <section class="editor-panel" aria-labelledby="transcript-label">
+    <div class="editor-toolbar">
+      <label id="transcript-label" for="transcript-text">Trascrizione</label>
+      <span class="editor-badge">{{ readOnly() ? 'Sola lettura' : 'Modificabile' }}</span>
+    </div>
+    <p id="transcript-help" class="hint">
+      {{
+        readOnly()
+          ? "Il testo è bloccato durante l'invio e dopo l'approvazione."
+          : 'Puoi correggere liberamente il testo della registrazione.'
+      }}
+    </p>
+    <textarea
+      #transcriptInput
+      id="transcript-text"
+      name="transcript"
+      rows="12"
+      spellcheck="true"
+      [value]="text() ?? ''"
+      [readOnly]="readOnly()"
+      [attr.aria-describedby]="
+        loadError() ? 'transcript-help transcript-load-error' : 'transcript-help'
+      "
+      (input)="onTextInput(transcriptInput.value)"
+    ></textarea>
+  </section>
+} @else {
+  <section class="empty-state" aria-labelledby="review-empty-title">
+    <span class="empty-symbol" aria-hidden="true">≡</span>
+    <h2 id="review-empty-title">Nessuna trascrizione disponibile</h2>
+    <p>La trascrizione sarà disponibile qui al termine dell'elaborazione dell'audio.</p>
+  </section>
+}
