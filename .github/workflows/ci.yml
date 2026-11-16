@@ -12,6 +12,7 @@ on:
     branches: [main]
   # run CI by hand from the Actions tab (usefully for testing)
   workflow_dispatch:
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -20,6 +21,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      TRANSCRIPTION_SERVICE_API_KEY: test-api-key
     #if one of these steps fails,
     # the job will be marked as failed and the workflow will stop
     steps:
@@ -36,10 +39,26 @@ jobs:
         #set permissions to execute the Maven Wrapper script
         run: chmod +x mvnw
 
-      - name: Build and test
+      - name: Build and test (Java)
         #run the Maven Wrapper script to build and test the project
         #by using maven wrapper, we ensure that the correct version of Maven is used
         run: ./mvnw -B verify
         # Spring maps these env vars to hubspot.api.token, fireflies.api.key, fireflies.webhook.signing.secret
         env:
           HUBSPOT_API_TOKEN: ${{ secrets.HUBSPOT_API_TOKEN }}
+          TRANSCRIPTION_SERVICE_URL: ${{ secrets.TRANSCRIPTION_SERVICE_URL }}
+
+      # for python test
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: transcription-service/uv.lock
+
+      - name: Install Python dependencies
+        working-directory: transcription-service
+        run: uv sync --locked --all-extras --dev
+
+      - name: Test (Python)
+        working-directory: transcription-service
+        run: uv run pytest -v
