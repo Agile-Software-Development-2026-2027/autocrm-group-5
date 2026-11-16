@@ -44,6 +44,7 @@ jobs:
         # Spring maps these env vars to hubspot.api.token, fireflies.api.key, fireflies.webhook.signing.secret
         env:
           HUBSPOT_API_TOKEN: ${{ secrets.HUBSPOT_API_TOKEN }}
+          TRANSCRIPTION_SERVICE_URL: ${{ secrets.TRANSCRIPTION_SERVICE_URL }}
 
       # for python test
       - name: Set up uv
