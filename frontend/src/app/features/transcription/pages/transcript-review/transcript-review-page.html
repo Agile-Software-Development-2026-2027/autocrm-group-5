@@ -1,0 +1,39 @@
+<header class="page-header">
+  <p class="eyebrow">02 / Il valore della conversazione</p>
+  <h1>Transcript Review</h1>
+  <p>Rivedi i dettagli, correggi il testo e prepara la nota per il Deal giusto.</p>
+</header>
+@if (isDiscarded()) {
+  <section class="discarded-state" role="status">
+    <span class="discarded-symbol" aria-hidden="true">✓</span>
+    <h2>Trascrizione scartata</h2>
+    <p>La sessione e la bozza sono state eliminate. Discard non ha effettuato invii.</p>
+    <a routerLink="/audio-upload">Torna ad Audio Upload <span aria-hidden="true">→</span></a>
+  </section>
+} @else {
+  <div
+    class="review-workspace"
+    [class.has-actions]="actionsEnabled() && transcriptId() !== null && draftText() !== null"
+  >
+    <section class="editor-column" aria-label="Testo della trascrizione">
+      <app-transcript-editor
+        [text]="draftText()"
+        [loadError]="loadError()"
+        [readOnly]="editorLocked()"
+        (textChange)="onTextChange($event)"
+      />
+      @if (isDirty()) {
+        <p class="draft-note" role="status">Le modifiche sono conservate in questa pagina.</p>
+      }
+    </section>
+    @if (actionsEnabled() && transcriptId() !== null && draftText() !== null) {
+      <aside class="decision-column" aria-label="Approvazione e destinazione della nota">
+        <app-transcript-review-actions
+          [jobId]="transcriptId()!"
+          [text]="draftText()!"
+          (discarded)="onDiscarded($event)"
+        />
+      </aside>
+    }
+  </div>
+}

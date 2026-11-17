@@ -1,0 +1,54 @@
+<section class="file-picker" aria-labelledby="audio-picker-title">
+  <div class="picker-heading">
+    <div>
+      <h2 id="audio-picker-title">Seleziona una registrazione</h2>
+      <p class="picker-subtitle">
+        Una conversazione alla volta, con tutti i dettagli al posto giusto.
+      </p>
+    </div>
+    <span class="limit-badge" id="audio-file-limit">Fino a {{ config.maxSizeMb }} MB</span>
+  </div>
+  <div class="file-control">
+    <span class="audio-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+    <p class="control-title">Il punto di partenza è il tuo audio.</p>
+    <p class="control-hint">Apri il selettore del dispositivo per scegliere la registrazione.</p>
+    <input
+      #fileInput
+      id="audio-file"
+      class="file-input"
+      type="file"
+      [disabled]="disabled()"
+      [accept]="acceptedFileTypes"
+      aria-describedby="audio-file-formats audio-file-limit audio-file-compatibility audio-file-status"
+      [attr.aria-invalid]="errorMessage() ? 'true' : 'false'"
+      [attr.aria-errormessage]="errorMessage() ? 'audio-file-error' : null"
+      (change)="onFileChange(fileInput)"
+    />
+    <label class="file-button" for="audio-file">{{
+      selectedFile() ? 'Scegli un altro file audio' : 'Scegli un file audio'
+    }}</label>
+  </div>
+  @if (errorMessage(); as error) {
+    <p id="audio-file-error" class="error" role="alert">{{ error }}</p>
+  }
+  <p
+    id="audio-file-status"
+    class="file-status"
+    [class.has-file]="selectedFile() !== null"
+    role="status"
+  >
+    @if (selectedFile(); as file) {
+      File selezionato: <strong class="file-name">{{ file.name }}</strong>
+    } @else {
+      Nessun file selezionato.
+    }
+  </p>
+  <div class="picker-help">
+    <p id="audio-file-formats" class="hint">
+      Audio riconosciuto dal dispositivo, inclusi contenitori MP4, WebM e Ogg con una traccia audio.
+    </p>
+    <p id="audio-file-compatibility" class="hint">
+      La selezione non garantisce che il formato possa essere trascritto.
+    </p>
+  </div>
+</section>

@@ -1,0 +1,24 @@
+<a class="skip-link" href="#main-content">Vai al contenuto</a>
+<div class="app-shell">
+  <header class="app-header">
+    <div class="brand-lockup">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <div>
+        <p class="brand">AutoCRM <span>Group 5</span></p>
+        <p class="tagline">Conversazioni che diventano opportunità.</p>
+      </div>
+    </div>
+    <nav aria-label="Navigazione principale">
+      <a routerLink="/audio-upload" routerLinkActive="active" ariaCurrentWhenActive="page">
+        <span class="nav-number" aria-hidden="true">01</span><span>Audio Upload</span>
+      </a>
+      <a routerLink="/transcript-review" routerLinkActive="active" ariaCurrentWhenActive="page">
+        <span class="nav-number" aria-hidden="true">02</span><span>Transcript Review</span>
+      </a>
+    </nav>
+  </header>
+  <main #mainContent id="main-content" tabindex="-1"><router-outlet /></main>
+  <footer>
+    <span>AutoCRM · Group 5</span><span>Dalla conversazione alla prossima azione.</span>
+  </footer>
+</div>

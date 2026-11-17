@@ -1,0 +1,58 @@
+<form class="review-actions" novalidate (submit)="approve($event)">
+  <p class="eyebrow">La prossima azione</p>
+  <h2>Invia al Deal</h2>
+  <p class="form-intro">Associa il testo rivisto alla giusta opportunità commerciale.</p>
+  <label for="review-deal-code">Deal Code</label>
+  <p id="deal-code-help" class="hint">
+    Inserisci il codice del Deal a cui associare la trascrizione.
+  </p>
+  <input
+    #dealInput
+    id="review-deal-code"
+    name="dealCode"
+    type="text"
+    autocomplete="off"
+    required
+    [value]="dealCode()"
+    [disabled]="busy() || !eligible()"
+    [attr.aria-invalid]="dealCodeError() ? 'true' : 'false'"
+    [attr.aria-describedby]="dealCodeError() ? 'deal-code-help deal-code-error' : 'deal-code-help'"
+    (input)="onDealCodeInput(dealInput.value)"
+  />
+  @if (dealCodeError(); as error) {
+    <p id="deal-code-error" class="error" role="alert">{{ error }}</p>
+  }
+  @if (textError(); as error) {
+    <p id="transcript-validation-error" class="error" role="alert">{{ error }}</p>
+    <a class="correction-link" href="#transcript-text">Vai al testo della trascrizione</a>
+  }
+  <div class="buttons" [attr.aria-busy]="busy()">
+    <button type="submit" [disabled]="busy() || !eligible()">Approve and send to HubSpot</button>
+    <button class="discard" type="button" [disabled]="busy() || !canDiscard()" (click)="discard()">
+      Discard
+    </button>
+  </div>
+  <p class="discard-hint">
+    Discard elimina solo i dati locali, senza modificare eventuali note già create.
+  </p>
+  @if (busy()) {
+    <p class="sending-status" role="status">
+      Approvazione in corso. Attendi il completamento dell'invio…
+    </p>
+  }
+  @if (requestError(); as error) {
+    <p class="error" role="alert">{{ error }}</p>
+  }
+  @if (approval(); as result) {
+    <div class="success" role="status">
+      <p>Trascrizione inviata con successo a HubSpot.</p>
+      @if (result.noteId) {
+        <p>
+          Nota creata: <strong>{{ result.noteId }}</strong>
+        </p>
+      } @else {
+        <p>Il backend non ha restituito il riferimento della nota.</p>
+      }
+    </div>
+  }
+</form>
