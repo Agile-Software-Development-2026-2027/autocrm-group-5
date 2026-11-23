@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,9 @@ public class HubSpotService {
      */
     static final int MAX_NOTE_BODY_LENGTH = 65_536;
 
+    /** Cache TTL: how long (in seconds) the deals list is reused before fetching again from HubSpot. */
+    static final long DEALS_CACHE_TTL_SECONDS = 60;
+
     private static final String HUBSPOT_BASE_URL = "https://api.hubapi.com/crm/v3/objects";
     private static final int NOTE_TO_DEAL_ASSOCIATION_TYPE_ID = 214;
     private static final ParameterizedTypeReference<Map<String, Object>> MAP_TYPE =
@@ -33,6 +37,10 @@ public class HubSpotService {
 
     private final RestTemplate restTemplate;
     private final String hubspotToken;
+
+    // SCRUM-101: in-memory cache for the deals list
+    private volatile List<HubSpotDeal> cachedDeals = null;
+    private volatile Instant cacheExpiresAt = Instant.EPOCH;
 
     @Autowired
     public HubSpotService(@Value("${hubspot.service.key:${hubspot.api.token:}}") String hubspotToken) {
@@ -45,6 +53,54 @@ public class HubSpotService {
     }
 
     public record ApprovedNote(String dealId, String noteId) {}
+
+    /** SCRUM-101: A single HubSpot deal with the fields needed for the dropdown selector. */
+    public record HubSpotDeal(String dealId, String dealName, String dealStage) {}
+
+    /**
+     * SCRUM-101: Returns all active HubSpot Deals (dealId, dealName, dealStage).
+     * Results are cached for {@link #DEALS_CACHE_TTL_SECONDS} seconds to respect API rate limits.
+     */
+    @SuppressWarnings("unchecked")
+    public synchronized List<HubSpotDeal> getDeals() {
+        Instant now = Instant.now();
+        if (cachedDeals != null && now.isBefore(cacheExpiresAt)) {
+            return cachedDeals;
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(hubspotToken);
+
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                HUBSPOT_BASE_URL + "/deals?properties=dealname,dealstage&limit=100",
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                MAP_TYPE
+        );
+
+        List<HubSpotDeal> deals = new ArrayList<>();
+        if (response.getBody() != null) {
+            List<Map<String, Object>> results =
+                    (List<Map<String, Object>>) response.getBody().get("results");
+            if (results != null) {
+                for (Map<String, Object> item : results) {
+                    String id = item.get("id") != null ? item.get("id").toString() : null;
+                    Map<String, Object> props = (Map<String, Object>) item.get("properties");
+                    String name = props != null && props.get("dealname") != null
+                            ? props.get("dealname").toString() : null;
+                    String stage = props != null && props.get("dealstage") != null
+                            ? props.get("dealstage").toString() : null;
+                    if (id != null) {
+                        deals.add(new HubSpotDeal(id, name, stage));
+                    }
+                }
+            }
+        }
+
+        cachedDeals = List.copyOf(deals);
+        cacheExpiresAt = now.plus(Duration.ofSeconds(DEALS_CACHE_TTL_SECONDS));
+        return cachedDeals;
+    }
 
     /**
      * Looks up the deal and creates the associated note.
