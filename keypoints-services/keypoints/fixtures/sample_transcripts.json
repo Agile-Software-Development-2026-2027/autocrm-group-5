@@ -1,0 +1,45 @@
+[
+  {
+    "model": "keypoints.transcript",
+    "pk": 1,
+    "fields": {
+      "text": "Anna (sales): Revelis wants the CRM integration live by the end of January. Marco (client): we need the deal stage to update automatically after every call. Anna: we will send a proposal with the timeline by Friday. Marco: budget approval is expected next week.",
+      "text_hash": "07a40c1f62f4f7af62628fb5a2fe725ee85ebf9136ef3e17b57a59ccdd52c78f",
+      "key_points": [
+        "Integration must be live by the end of January",
+        "Deal stage must update automatically after every call",
+        "Anna sends the proposal with the timeline by Friday",
+        "Budget approval expected next week"
+      ],
+      "created_at": "2026-11-22T09:00:00Z",
+      "updated_at": "2026-11-22T09:00:00Z"
+    }
+  },
+  {
+    "model": "keypoints.transcript",
+    "pk": 2,
+    "fields": {
+      "text": "Luca (support): the client reported that two meetings were not synchronised to HubSpot. Sara (dev): the webhook signature check failed because the secret was rotated. Luca: we must notify the client and re-send the two transcripts. Sara: I will add an alert when signature checks fail.",
+      "text_hash": "c8415628c6e1ab1cfa87464d9cdf29c77a80c2f4b469f408ef6edd1998e7e6fc",
+      "key_points": [
+        "Two meetings were not synchronised to HubSpot",
+        "Cause: webhook signature check failed after a secret rotation",
+        "Notify the client and re-send the two transcripts",
+        "Sara adds an alert for failed signature checks"
+      ],
+      "created_at": "2026-11-22T09:00:00Z",
+      "updated_at": "2026-11-22T09:00:00Z"
+    }
+  },
+  {
+    "model": "keypoints.transcript",
+    "pk": 3,
+    "fields": {
+      "text": "Giulia (manager): kick-off meeting for the AutoCRM pilot with three sales reps. Paolo (sales): we want tasks created in HubSpot only after a human review. Giulia: the pilot lasts four weeks, with a check-in every Monday. Paolo: success means at least 80 percent of notes need no manual edits.",
+      "text_hash": "a07005f4da4c65ca40088bc633e959de81eaf450d2fbeb11b93de9cee7d4b574",
+      "key_points": [],
+      "created_at": "2026-11-22T09:00:00Z",
+      "updated_at": "2026-11-22T09:00:00Z"
+    }
+  }
+]
