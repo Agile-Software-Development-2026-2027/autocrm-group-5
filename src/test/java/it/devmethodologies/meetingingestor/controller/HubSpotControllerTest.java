@@ -11,10 +11,13 @@ import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -106,5 +109,35 @@ class HubSpotControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error")
                         .value("Multiple deals found with code: AMBIGUOUS. No note was created."));
+    }
+
+    // SCRUM-101: GET /api/hubspot/deals returns list of deals
+    @Test
+    void getDealsReturns200WithDealsList() throws Exception {
+        when(hubSpotService.getDeals()).thenReturn(List.of(
+                new HubSpotService.HubSpotDeal("deal-1", "Alpha Deal", "qualifiedtobuy"),
+                new HubSpotService.HubSpotDeal("deal-2", "Beta Deal", "contractsent")
+        ));
+
+        mockMvc.perform(get("/api/hubspot/deals"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].dealId").value("deal-1"))
+                .andExpect(jsonPath("$[0].dealName").value("Alpha Deal"))
+                .andExpect(jsonPath("$[0].dealStage").value("qualifiedtobuy"))
+                .andExpect(jsonPath("$[1].dealId").value("deal-2"))
+                .andExpect(jsonPath("$[1].dealName").value("Beta Deal"))
+                .andExpect(jsonPath("$[1].dealStage").value("contractsent"));
+
+        verify(hubSpotService).getDeals();
+    }
+
+    @Test
+    void getDealsReturns500WhenServiceThrows() throws Exception {
+        when(hubSpotService.getDeals()).thenThrow(new IllegalStateException("HubSpot down"));
+
+        mockMvc.perform(get("/api/hubspot/deals"))
+                .andExpect(status().isInternalServerError());
+
+        verify(hubSpotService).getDeals();
     }
 }

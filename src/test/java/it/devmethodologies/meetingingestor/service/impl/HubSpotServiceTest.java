@@ -197,6 +197,39 @@ class HubSpotServiceTest {
         assertTrue(error.getMessage().contains("502"));
     }
 
+    // SCRUM-101: getDeals fetches active deals and caches the result within TTL
+    @Test
+    void getDealsReturnsDealsListAndCachesResult() {
+        String dealsUrl = "https://api.hubapi.com/crm/v3/objects/deals?properties=dealname,dealstage&limit=100";
+        Map<String, Object> deal1 = Map.of(
+                "id", "deal-101",
+                "properties", Map.of("dealname", "ACME Expansion", "dealstage", "presentationscheduled")
+        );
+        Map<String, Object> deal2 = Map.of(
+                "id", "deal-102",
+                "properties", Map.of("dealname", "Initech Support", "dealstage", "qualifiedtobuy")
+        );
+        doReturn(ResponseEntity.ok(Map.of("results", List.of(deal1, deal2))))
+                .when(restTemplate)
+                .exchange(eq(dealsUrl), eq(HttpMethod.GET), any(HttpEntity.class), any(ParameterizedTypeReference.class));
+
+        List<HubSpotService.HubSpotDeal> firstCall = service.getDeals();
+        assertEquals(2, firstCall.size());
+        assertEquals("deal-101", firstCall.get(0).dealId());
+        assertEquals("ACME Expansion", firstCall.get(0).dealName());
+        assertEquals("presentationscheduled", firstCall.get(0).dealStage());
+        assertEquals("deal-102", firstCall.get(1).dealId());
+        assertEquals("Initech Support", firstCall.get(1).dealName());
+        assertEquals("qualifiedtobuy", firstCall.get(1).dealStage());
+
+        // Second call within TTL should return cached result without contacting HubSpot again
+        List<HubSpotService.HubSpotDeal> secondCall = service.getDeals();
+        assertEquals(firstCall, secondCall);
+
+        verify(restTemplate, org.mockito.Mockito.times(1))
+                .exchange(eq(dealsUrl), eq(HttpMethod.GET), any(HttpEntity.class), any(ParameterizedTypeReference.class));
+    }
+
     private void stubSearch(List<Map<String, Object>> results) {
         doReturn(ResponseEntity.ok(Map.of("results", results)))
                 .when(restTemplate)
