@@ -5,11 +5,13 @@ package it.devmethodologies.meetingingestor.controller;
 import it.devmethodologies.meetingingestor.service.impl.HubSpotService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -21,6 +23,16 @@ public class HubSpotController {
 
     public HubSpotController(HubSpotService hubSpotService) {
         this.hubSpotService = hubSpotService;
+    }
+
+    // SCRUM-101: Expose the list of HubSpot Deals for the frontend dropdown selector
+    @GetMapping("/deals")
+    public ResponseEntity<List<HubSpotService.HubSpotDeal>> getDeals() {
+        try {
+            return ResponseEntity.ok(hubSpotService.getDeals());
+        } catch (RuntimeException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     // SCRUM 67: Create the backend endpoint to receive approved payloads
