@@ -57,6 +57,16 @@ public class HubSpotService {
     /** SCRUM-101: A single HubSpot deal with the fields needed for the dropdown selector. */
     public record HubSpotDeal(String dealId, String dealName, String dealStage) {}
 
+    /** SCRUM-101: A transcript payload with optional LLM-extracted action points and tasks (SCRUM-112). */
+    public record TranscriptSyncItem(
+            String text,
+            List<Map<String, Object>> actionPoints,
+            List<Map<String, Object>> tasks
+    ) {}
+
+    /** SCRUM-101: Result of syncing one or multiple transcripts to a target deal. */
+    public record MultiSyncResult(String dealId, List<String> noteIds) {}
+
     /**
      * SCRUM-101: Returns all active HubSpot Deals (dealId, dealName, dealStage).
      * Results are cached for {@link #DEALS_CACHE_TTL_SECONDS} seconds to respect API rate limits.
@@ -107,9 +117,78 @@ public class HubSpotService {
      * A failed lookup throws before any note is created.
      */
     public ApprovedNote publishApprovedTranscript(String dealCode, String transcriptText) {
+        MultiSyncResult result = publishApprovedTranscripts(
+                dealCode,
+                List.of(new TranscriptSyncItem(transcriptText, null, null))
+        );
+        return new ApprovedNote(result.dealId(), result.noteIds().get(0));
+    }
+
+    /**
+     * SCRUM-101: Looks up the target deal and creates an associated Note (associationTypeId: 214)
+     * for each transcript in the list, including optional action points/tasks without failing if omitted.
+     */
+    public MultiSyncResult publishApprovedTranscripts(String dealCode, List<TranscriptSyncItem> items) {
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("The transcript text cannot be empty.");
+        }
         String dealId = findDealIdByCode(dealCode);
-        String noteId = createAndAssociateNote(dealId, transcriptText);
-        return new ApprovedNote(dealId, noteId);
+        List<String> noteIds = new ArrayList<>();
+        for (TranscriptSyncItem item : items) {
+            String noteBody = formatTranscriptNoteBody(item);
+            if (noteBody.isBlank()) {
+                throw new IllegalArgumentException("The transcript text cannot be empty.");
+            }
+            String noteId = createAndAssociateNote(dealId, noteBody);
+            noteIds.add(noteId);
+        }
+        return new MultiSyncResult(dealId, noteIds);
+    }
+
+    /**
+     * Formats a transcript and its optional action points and tasks into a note body.
+     */
+    public static String formatTranscriptNoteBody(TranscriptSyncItem item) {
+        if (item == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        if (item.text() != null && !item.text().isBlank()) {
+            sb.append(item.text().trim());
+        }
+        if (item.actionPoints() != null && !item.actionPoints().isEmpty()) {
+            sb.append("\n\nAction Points:\n");
+            for (Map<String, Object> ap : item.actionPoints()) {
+                Object title = ap.get("title");
+                Object desc = ap.get("description");
+                if (title != null && !title.toString().isBlank()) {
+                    sb.append("- ").append(title);
+                    if (desc != null && !desc.toString().isBlank()) {
+                        sb.append(": ").append(desc);
+                    }
+                    sb.append("\n");
+                }
+            }
+        }
+        if (item.tasks() != null && !item.tasks().isEmpty()) {
+            sb.append("\nTasks:\n");
+            for (Map<String, Object> t : item.tasks()) {
+                Object title = t.get("title");
+                Object assignee = t.get("assignee");
+                Object dueDate = t.get("dueDate");
+                if (title != null && !title.toString().isBlank()) {
+                    sb.append("- ").append(title);
+                    if (assignee != null && !assignee.toString().isBlank()) {
+                        sb.append(" (Assignee: ").append(assignee).append(")");
+                    }
+                    if (dueDate != null && !dueDate.toString().isBlank()) {
+                        sb.append(" [Due: ").append(dueDate).append("]");
+                    }
+                    sb.append("\n");
+                }
+            }
+        }
+        return sb.toString().trim();
     }
 
     /*
