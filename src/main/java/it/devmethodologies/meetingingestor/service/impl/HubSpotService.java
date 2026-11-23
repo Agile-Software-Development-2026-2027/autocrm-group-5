@@ -56,15 +56,21 @@ public class HubSpotService {
         return new ApprovedNote(dealId, noteId);
     }
 
-    /**
-     * SCRUM 68: Find the Deal by deal code (deal name or deal id) through the CRM search API.
+    /*
+     SCRUM-99: Find the Deal by deal code (deal name or deal id) through the CRM search API.
+     If the code is all digits it is treated as a numeric Deal ID and matched against
+     hs_object_id; otherwise it is matched against dealname.
+     A single filterGroup is used to avoid the duplicate-result bug caused by HubSpot's
+     OR-across-filterGroups behaviour.
      */
     @SuppressWarnings("unchecked")
     public String findDealIdByCode(String dealCode) {
+        boolean isNumericId = dealCode != null && dealCode.matches("\\d+");
+        String filterProperty = isNumericId ? "hs_object_id" : "dealname";
+
         Map<String, Object> searchBody = Map.of(
                 "filterGroups", List.of(
-                        filterGroup("dealname", dealCode),
-                        filterGroup("hs_object_id", dealCode)
+                        filterGroup(filterProperty, dealCode)
                 )
         );
 

@@ -75,3 +75,8 @@ Sends the user-edited transcript and target deal code to be pushed to the CRM.
     "error": "Deal code and text cannot be empty."
   }
   ```
+
+> **`dealCode` resolution (SCRUM-98):** if the value is all digits it is treated
+> as a numeric HubSpot Deal ID and matched against `hs_object_id`; otherwise it
+> is matched by Deal Name (`dealname`). Only one filter is used per request to
+> avoid duplicate matches.

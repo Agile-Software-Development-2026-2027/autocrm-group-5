@@ -61,8 +61,7 @@ class HubSpotServiceTest {
         HttpEntity<?> request = captureSingle(SEARCH_URL);
         assertEquals("Bearer test-token", request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
         List<String> searchedProperties = propertyNames(request.getBody());
-        assertTrue(searchedProperties.contains("dealname"));
-        assertTrue(searchedProperties.contains("hs_object_id"));
+        assertEquals(List.of("dealname"), searchedProperties);  // non-numeric → dealname only
         assertTrue(request.getBody().toString().contains("ACME-1"));
         verify(restTemplate, never()).exchange(
                 eq(NOTES_URL), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class));
@@ -94,6 +93,40 @@ class HubSpotServiceTest {
         assertTrue(error.getMessage().contains("AMBIGUOUS"));
         verify(restTemplate, never()).exchange(
                 eq(NOTES_URL), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class));
+    }
+
+    // SCRUM-99: numeric code must use hs_object_id filter only
+    @Test
+    void numericDealCodeSearchesByObjectId() {
+        stubSearch(List.of(Map.of("id", "538051747060")));
+
+        String dealId = service.findDealIdByCode("538051747060");
+
+        assertEquals("538051747060", dealId);
+        List<String> props = propertyNames(captureSingle(SEARCH_URL).getBody());
+        assertEquals(List.of("hs_object_id"), props);
+    }
+
+    // SCRUM-99: non-numeric code must use dealname filter only
+    @Test
+    void nonNumericDealCodeSearchesByDealName() {
+        stubSearch(List.of(Map.of("id", "deal-99")));
+
+        service.findDealIdByCode("Buying-New-PC-Deal");
+
+        List<String> props = propertyNames(captureSingle(SEARCH_URL).getBody());
+        assertEquals(List.of("dealname"), props);
+    }
+
+    // SCRUM-99: mixed alphanumeric (contains letters) → dealname, not ID
+    @Test
+    void mixedAlphanumericCodeSearchesByDealName() {
+        stubSearch(List.of(Map.of("id", "deal-7")));
+
+        service.findDealIdByCode("DEAL-123");
+
+        List<String> props = propertyNames(captureSingle(SEARCH_URL).getBody());
+        assertEquals(List.of("dealname"), props);
     }
 
     @Test
