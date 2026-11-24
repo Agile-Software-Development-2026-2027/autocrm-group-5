@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,9 @@ public class HubSpotService {
      */
     static final int MAX_NOTE_BODY_LENGTH = 65_536;
 
+    /** Cache TTL: how long (in seconds) the deals list is reused before fetching again from HubSpot. */
+    static final long DEALS_CACHE_TTL_SECONDS = 60;
+
     private static final String HUBSPOT_BASE_URL = "https://api.hubapi.com/crm/v3/objects";
     private static final int NOTE_TO_DEAL_ASSOCIATION_TYPE_ID = 214;
     private static final ParameterizedTypeReference<Map<String, Object>> MAP_TYPE =
@@ -33,6 +37,10 @@ public class HubSpotService {
 
     private final RestTemplate restTemplate;
     private final String hubspotToken;
+
+    // SCRUM-101: in-memory cache for the deals list
+    private volatile List<HubSpotDeal> cachedDeals = null;
+    private volatile Instant cacheExpiresAt = Instant.EPOCH;
 
     @Autowired
     public HubSpotService(@Value("${hubspot.service.key:${hubspot.api.token:}}") String hubspotToken) {
@@ -46,14 +54,141 @@ public class HubSpotService {
 
     public record ApprovedNote(String dealId, String noteId) {}
 
+    /** SCRUM-101: A single HubSpot deal with the fields needed for the dropdown selector. */
+    public record HubSpotDeal(String dealId, String dealName, String dealStage) {}
+
+    /** SCRUM-101: A transcript payload with optional LLM-extracted action points and tasks (SCRUM-112). */
+    public record TranscriptSyncItem(
+            String text,
+            List<Map<String, Object>> actionPoints,
+            List<Map<String, Object>> tasks
+    ) {}
+
+    /** SCRUM-101: Result of syncing one or multiple transcripts to a target deal. */
+    public record MultiSyncResult(String dealId, List<String> noteIds) {}
+
+    /**
+     * SCRUM-101: Returns all active HubSpot Deals (dealId, dealName, dealStage).
+     * Results are cached for {@link #DEALS_CACHE_TTL_SECONDS} seconds to respect API rate limits.
+     */
+    @SuppressWarnings("unchecked")
+    public synchronized List<HubSpotDeal> getDeals() {
+        Instant now = Instant.now();
+        if (cachedDeals != null && now.isBefore(cacheExpiresAt)) {
+            return cachedDeals;
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(hubspotToken);
+
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                HUBSPOT_BASE_URL + "/deals?properties=dealname,dealstage&limit=100",
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                MAP_TYPE
+        );
+
+        List<HubSpotDeal> deals = new ArrayList<>();
+        if (response.getBody() != null) {
+            List<Map<String, Object>> results =
+                    (List<Map<String, Object>>) response.getBody().get("results");
+            if (results != null) {
+                for (Map<String, Object> item : results) {
+                    String id = item.get("id") != null ? item.get("id").toString() : null;
+                    Map<String, Object> props = (Map<String, Object>) item.get("properties");
+                    String name = props != null && props.get("dealname") != null
+                            ? props.get("dealname").toString() : null;
+                    String stage = props != null && props.get("dealstage") != null
+                            ? props.get("dealstage").toString() : null;
+                    if (id != null) {
+                        deals.add(new HubSpotDeal(id, name, stage));
+                    }
+                }
+            }
+        }
+
+        cachedDeals = List.copyOf(deals);
+        cacheExpiresAt = now.plus(Duration.ofSeconds(DEALS_CACHE_TTL_SECONDS));
+        return cachedDeals;
+    }
+
     /**
      * Looks up the deal and creates the associated note.
      * A failed lookup throws before any note is created.
      */
     public ApprovedNote publishApprovedTranscript(String dealCode, String transcriptText) {
+        MultiSyncResult result = publishApprovedTranscripts(
+                dealCode,
+                List.of(new TranscriptSyncItem(transcriptText, null, null))
+        );
+        return new ApprovedNote(result.dealId(), result.noteIds().get(0));
+    }
+
+    /**
+     * SCRUM-101: Looks up the target deal and creates an associated Note (associationTypeId: 214)
+     * for each transcript in the list, including optional action points/tasks without failing if omitted.
+     */
+    public MultiSyncResult publishApprovedTranscripts(String dealCode, List<TranscriptSyncItem> items) {
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("The transcript text cannot be empty.");
+        }
         String dealId = findDealIdByCode(dealCode);
-        String noteId = createAndAssociateNote(dealId, transcriptText);
-        return new ApprovedNote(dealId, noteId);
+        List<String> noteIds = new ArrayList<>();
+        for (TranscriptSyncItem item : items) {
+            String noteBody = formatTranscriptNoteBody(item);
+            if (noteBody.isBlank()) {
+                throw new IllegalArgumentException("The transcript text cannot be empty.");
+            }
+            String noteId = createAndAssociateNote(dealId, noteBody);
+            noteIds.add(noteId);
+        }
+        return new MultiSyncResult(dealId, noteIds);
+    }
+
+    /**
+     * Formats a transcript and its optional action points and tasks into a note body.
+     */
+    public static String formatTranscriptNoteBody(TranscriptSyncItem item) {
+        if (item == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        if (item.text() != null && !item.text().isBlank()) {
+            sb.append(item.text().trim());
+        }
+        if (item.actionPoints() != null && !item.actionPoints().isEmpty()) {
+            sb.append("\n\nAction Points:\n");
+            for (Map<String, Object> ap : item.actionPoints()) {
+                Object title = ap.get("title");
+                Object desc = ap.get("description");
+                if (title != null && !title.toString().isBlank()) {
+                    sb.append("- ").append(title);
+                    if (desc != null && !desc.toString().isBlank()) {
+                        sb.append(": ").append(desc);
+                    }
+                    sb.append("\n");
+                }
+            }
+        }
+        if (item.tasks() != null && !item.tasks().isEmpty()) {
+            sb.append("\nTasks:\n");
+            for (Map<String, Object> t : item.tasks()) {
+                Object title = t.get("title");
+                Object assignee = t.get("assignee");
+                Object dueDate = t.get("dueDate");
+                if (title != null && !title.toString().isBlank()) {
+                    sb.append("- ").append(title);
+                    if (assignee != null && !assignee.toString().isBlank()) {
+                        sb.append(" (Assignee: ").append(assignee).append(")");
+                    }
+                    if (dueDate != null && !dueDate.toString().isBlank()) {
+                        sb.append(" [Due: ").append(dueDate).append("]");
+                    }
+                    sb.append("\n");
+                }
+            }
+        }
+        return sb.toString().trim();
     }
 
     /*

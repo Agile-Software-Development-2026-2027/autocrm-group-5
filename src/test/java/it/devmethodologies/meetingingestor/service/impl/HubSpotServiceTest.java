@@ -197,6 +197,102 @@ class HubSpotServiceTest {
         assertTrue(error.getMessage().contains("502"));
     }
 
+    // SCRUM-101: getDeals fetches active deals and caches the result within TTL
+    @Test
+    void getDealsReturnsDealsListAndCachesResult() {
+        String dealsUrl = "https://api.hubapi.com/crm/v3/objects/deals?properties=dealname,dealstage&limit=100";
+        Map<String, Object> deal1 = Map.of(
+                "id", "deal-101",
+                "properties", Map.of("dealname", "ACME Expansion", "dealstage", "presentationscheduled")
+        );
+        Map<String, Object> deal2 = Map.of(
+                "id", "deal-102",
+                "properties", Map.of("dealname", "Initech Support", "dealstage", "qualifiedtobuy")
+        );
+        doReturn(ResponseEntity.ok(Map.of("results", List.of(deal1, deal2))))
+                .when(restTemplate)
+                .exchange(eq(dealsUrl), eq(HttpMethod.GET), any(HttpEntity.class), any(ParameterizedTypeReference.class));
+
+        List<HubSpotService.HubSpotDeal> firstCall = service.getDeals();
+        assertEquals(2, firstCall.size());
+        assertEquals("deal-101", firstCall.get(0).dealId());
+        assertEquals("ACME Expansion", firstCall.get(0).dealName());
+        assertEquals("presentationscheduled", firstCall.get(0).dealStage());
+        assertEquals("deal-102", firstCall.get(1).dealId());
+        assertEquals("Initech Support", firstCall.get(1).dealName());
+        assertEquals("qualifiedtobuy", firstCall.get(1).dealStage());
+
+        // Second call within TTL should return cached result without contacting HubSpot again
+        List<HubSpotService.HubSpotDeal> secondCall = service.getDeals();
+        assertEquals(firstCall, secondCall);
+
+        verify(restTemplate, org.mockito.Mockito.times(1))
+                .exchange(eq(dealsUrl), eq(HttpMethod.GET), any(HttpEntity.class), any(ParameterizedTypeReference.class));
+    }
+
+    // SCRUM-101: publishApprovedTranscripts creates associated Note (type 214) for each transcript
+    @Test
+    void multipleTranscriptsCreateAssociatedNoteForEach() {
+        stubSearch(List.of(Map.of("id", "deal-42")));
+        stubNoteCreation();
+
+        HubSpotService.TranscriptSyncItem item1 = new HubSpotService.TranscriptSyncItem("First call notes", null, null);
+        HubSpotService.TranscriptSyncItem item2 = new HubSpotService.TranscriptSyncItem("Second call notes", null, null);
+
+        HubSpotService.MultiSyncResult result = service.publishApprovedTranscripts("ACME-1", List.of(item1, item2));
+
+        assertEquals("deal-42", result.dealId());
+        assertEquals(2, result.noteIds().size());
+        assertEquals("note-1", result.noteIds().get(0));
+        assertEquals("note-2", result.noteIds().get(1));
+
+        List<String> bodies = noteBodies();
+        assertEquals(List.of("First call notes", "Second call notes"), bodies);
+    }
+
+    // SCRUM-101: formatTranscriptNoteBody formats action points and tasks without failing if omitted
+    @Test
+    void formatTranscriptNoteBodyIncludesActionPointsAndTasksWhenPresent() {
+        HubSpotService.TranscriptSyncItem item = new HubSpotService.TranscriptSyncItem(
+                "Transcript text here",
+                List.of(Map.of("title", "Agreed on 10% discount", "description", "For annual renewal")),
+                List.of(Map.of("title", "Send contract", "assignee", "Giulia", "dueDate", "2026-11-28"))
+        );
+
+        String noteBody = HubSpotService.formatTranscriptNoteBody(item);
+
+        assertTrue(noteBody.contains("Transcript text here"));
+        assertTrue(noteBody.contains("Action Points:"));
+        assertTrue(noteBody.contains("- Agreed on 10% discount: For annual renewal"));
+        assertTrue(noteBody.contains("Tasks:"));
+        assertTrue(noteBody.contains("- Send contract (Assignee: Giulia) [Due: 2026-11-28]"));
+    }
+
+    @Test
+    void formatTranscriptNoteBodySucceedsWhenActionPointsAndTasksOmitted() {
+        HubSpotService.TranscriptSyncItem item = new HubSpotService.TranscriptSyncItem(
+                "Simple transcript",
+                null,
+                null
+        );
+
+        String noteBody = HubSpotService.formatTranscriptNoteBody(item);
+
+        assertEquals("Simple transcript", noteBody);
+        assertFalse(noteBody.contains("Action Points:"));
+        assertFalse(noteBody.contains("Tasks:"));
+    }
+
+    @Test
+    void emptyTranscriptsListThrowsException() {
+        IllegalArgumentException error = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.publishApprovedTranscripts("ACME-1", List.of())
+        );
+
+        assertTrue(error.getMessage().contains("cannot be empty"));
+    }
+
     private void stubSearch(List<Map<String, Object>> results) {
         doReturn(ResponseEntity.ok(Map.of("results", results)))
                 .when(restTemplate)

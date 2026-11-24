@@ -8,6 +8,7 @@ backend and the Python microservices.
 | [Sprint 2: Audio Upload & Review](#sprint-2-audio-upload--review) | `/api/transcriptions/**` | Angular → Spring Boot |
 | [Extraction of action points and tasks](#extraction-of-action-points-and-tasks) | `POST /api/extractions` | Angular → Spring Boot |
 | | `POST /api/v1/extractions` | Spring Boot → keypoints-services (Python, internal) |
+| [HubSpot Deals](#hubspot-deals) | `GET /api/hubspot/deals`<br>`POST /api/hubspot/sync` | Angular → Spring Boot |
 
 ---
 
@@ -335,3 +336,98 @@ Keys are only ever set as environment variables or in git-ignored `.env` files, 
   that the `Keypoints-API-Key` header is sent and that each internal answer is mapped as in section 5.
 - **Angular:** until the backend is ready, mock `POST /api/extractions` with the example response above (and with a
   `429` and a `502`) using `HttpTestingController`.
+
+---
+
+# HubSpot Deals
+
+Endpoints for interacting with HubSpot deals in the meeting ingestion workflow.
+
+## 1. List Deals (SCRUM-101)
+
+Fetches existing deals from HubSpot to populate the deal dropdown selector in the frontend. Responses are cached server-side (60 s TTL) to respect HubSpot API rate limits.
+
+* **Endpoint:** `GET /api/hubspot/deals`
+* **Response Content-Type:** `application/json; charset=utf-8`
+* **Success Response (200 OK):**
+  ```json
+  [
+    {
+      "dealId": "string (the numeric HubSpot Deal ID)",
+      "dealName": "string (the name of the deal)",
+      "dealStage": "string (internal stage identifier, e.g. 'qualifiedtobuy')"
+    }
+  ]
+  ```
+* **Error Response (500 Internal Server Error):**
+  Returned if an error occurs while communicating with HubSpot.
+
+## 2. Sync Transcripts to Deal (SCRUM-67, SCRUM-101)
+
+Associates one or more meeting transcripts with a target HubSpot Deal by creating an associated Note (`associationTypeId: 214`) on the deal for each transcript.
+
+Supports both single-transcript requests (for backward compatibility) and multi-transcript requests. If LLM action points or tasks (SCRUM-112) are included with a transcript, they are formatted into the created Note; if omitted, the note is created with the transcript text without failure.
+
+* **Endpoint:** `POST /api/hubspot/sync`
+* **Content-Type:** `application/json`
+
+### Single-transcript payload (backward compatible)
+```json
+{
+  "dealCode": "string (HubSpot deal identifier or deal name)",
+  "text": "string (the reviewed transcript text)"
+}
+```
+
+### Multi-transcript payload
+```json
+{
+  "dealCode": "string (HubSpot deal identifier or deal name)",
+  "transcripts": [
+    {
+      "text": "string (the reviewed transcript text)",
+      "actionPoints": [
+        {
+          "title": "string (short summary of key outcome)",
+          "description": "string (optional detail)"
+        }
+      ],
+      "tasks": [
+        {
+          "title": "string (concrete follow-up action)",
+          "assignee": "string (optional assignee name)",
+          "dueDate": "string (optional YYYY-MM-DD)"
+        }
+      ]
+    }
+  ]
+}
+```
+
+* **Success Response (200 OK):**
+  ```json
+  {
+    "status": "success",
+    "dealId": "string (HubSpot Deal ID)",
+    "noteId": "string (ID of the first created Note)",
+    "noteIds": [
+      "string (Note ID)"
+    ]
+  }
+  ```
+* **Error Response (400 Bad Request):**
+  ```json
+  {
+    "error": "The deal code cannot be empty."
+  }
+  ```
+  or
+  ```json
+  {
+    "error": "The transcript text cannot be empty."
+  }
+  ```
+* **Error Response (500 Internal Server Error):**
+  Returned if communication with the HubSpot API fails.
+
+
