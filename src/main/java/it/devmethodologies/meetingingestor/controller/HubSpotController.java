@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -35,28 +36,55 @@ public class HubSpotController {
         }
     }
 
-    // SCRUM 67: Create the backend endpoint to receive approved payloads
+    // SCRUM-67, SCRUM-101: Create the backend endpoint to receive approved payloads (single or multiple transcripts)
     @PostMapping("/sync")
     public ResponseEntity<Map<String, Object>> syncTranscript(@RequestBody SyncRequest request) {
         if (request.dealCode() == null || request.dealCode().trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "The deal code cannot be empty."));
         }
-        if (request.text() == null || request.text().trim().isEmpty()) {
+
+        List<HubSpotService.TranscriptSyncItem> items = new ArrayList<>();
+        if (request.transcripts() != null && !request.transcripts().isEmpty()) {
+            for (SyncRequest.TranscriptItem item : request.transcripts()) {
+                if (item != null && item.text() != null && !item.text().trim().isEmpty()) {
+                    items.add(new HubSpotService.TranscriptSyncItem(
+                            item.text(),
+                            item.actionPoints(),
+                            item.tasks()
+                    ));
+                }
+            }
+        } else if (request.text() != null && !request.text().trim().isEmpty()) {
+            items.add(new HubSpotService.TranscriptSyncItem(request.text(), null, null));
+        }
+
+        if (items.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "The transcript text cannot be empty."));
         }
 
         try {
-            HubSpotService.ApprovedNote created =
-                    hubSpotService.publishApprovedTranscript(request.dealCode(), request.text());
+            HubSpotService.MultiSyncResult result =
+                    hubSpotService.publishApprovedTranscripts(request.dealCode(), items);
             return ResponseEntity.ok(Map.of(
                     "status", "success",
-                    "dealId", created.dealId(),
-                    "noteId", created.noteId()
+                    "dealId", result.dealId(),
+                    "noteId", result.noteIds().isEmpty() ? "" : result.noteIds().get(0),
+                    "noteIds", result.noteIds()
             ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    public record SyncRequest(String dealCode, String text) {}
+    public record SyncRequest(
+            String dealCode,
+            String text,
+            List<TranscriptItem> transcripts
+    ) {
+        public record TranscriptItem(
+                String text,
+                List<Map<String, Object>> actionPoints,
+                List<Map<String, Object>> tasks
+        ) {}
+    }
 }
