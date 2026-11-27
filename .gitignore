@@ -46,3 +46,6 @@ logs/
 
 ### Claude Code ###
 .claude/
+
+### Local database ###
+/data/

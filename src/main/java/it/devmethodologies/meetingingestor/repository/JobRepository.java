@@ -1,7 +1,9 @@
 package it.devmethodologies.meetingingestor.repository;
 
+import it.devmethodologies.meetingingestor.model.JobStatus;
 import it.devmethodologies.meetingingestor.model.TranscriptionJob;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface JobRepository {
@@ -14,4 +16,6 @@ public interface JobRepository {
      * Returns the job with the given id, or an empty Optional if there is none.
      */
     Optional<TranscriptionJob> findById(String id);
+
+    List<TranscriptionJob> findByStatus(JobStatus status);
 }

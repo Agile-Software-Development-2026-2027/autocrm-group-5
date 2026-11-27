@@ -1,15 +1,15 @@
 package it.devmethodologies.meetingingestor.repository.impl;
 
+import it.devmethodologies.meetingingestor.model.JobStatus;
 import it.devmethodologies.meetingingestor.model.TranscriptionJob;
 import it.devmethodologies.meetingingestor.repository.JobRepository;
-import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Repository
 public class InMemoryJobRepository implements JobRepository {
     private final Map<String, TranscriptionJob> jobs = new ConcurrentHashMap<>();
     @Override
@@ -23,5 +23,11 @@ public class InMemoryJobRepository implements JobRepository {
             return  Optional.empty();
         }
         return  Optional.ofNullable(jobs.get(id));
+    }
+    @Override
+    public List<TranscriptionJob> findByStatus(JobStatus status) {
+        return jobs.values().stream()
+                .filter(job -> job.status() == status)
+                .toList();
     }
 }

@@ -84,14 +84,17 @@ public class TranscriptionService {
     }
 
     public String submit(Path audioFile, String lang) {
+        return submit(audioFile, lang, TranscriptionJob.UNTITLED);
+    }
+
+    public String submit(Path audioFile, String lang, String title) {
         Objects.requireNonNull(audioFile, "Audio file should not be null");
         String id = UUID.randomUUID().toString();
-        repository.save(TranscriptionJob.processing(id));
+        repository.save(TranscriptionJob.processing(id, title));
         CompletableFuture
                 .supplyAsync(() -> engine.transcribe(audioFile, lang), executor)
                 .orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS)
                 .whenComplete((transcript, error) -> finish(id, audioFile, transcript, error));
         return id;
-
     }
 }
