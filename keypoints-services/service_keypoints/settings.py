@@ -88,6 +88,8 @@ REST_FRAMEWORK = {
     # Lists are always paginated: never return the whole table in one response (availability)
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    # Every error has the shape {"error": ..., "code": ...} (docs/api-contract.md)
+    'EXCEPTION_HANDLER': 'keypoints.errors.contract_exception_handler',
 }
 
 # OpenAPI document metadata (shown by Swagger UI / ReDoc).
@@ -154,5 +156,30 @@ STATIC_URL = 'static/'
 MAILERS = {
     'default': {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+    },
+}
+
+# =====================================================================================
+# Key Points extraction (ported from the study project proj-ssd-2026)
+# =====================================================================================
+# Internal API key the backend must send in the 'Keypoints-API-Key' header.
+# Local-dev placeholder (shared with the backend's keypoints.service.apiKey).
+KEYPOINTS_API_KEY = os.environ.get('KEYPOINTS_API_KEY', 'api-just-for-test')
+
+# LLM configuration: Gemini through its OpenAI-compatible endpoint.
+# The key is read from the LLM_API_KEY environment variable, so it never lands in git.
+LLM_BASE_URL = os.environ.get('LLM_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta/openai/')
+LLM_MODEL = os.environ.get('LLM_MODEL', 'gemini-3.5-flash-lite')
+LLM_API_KEY = os.environ.get('LLM_API_KEY', '')  # never hard-code: set it in your env / run.ps1 (not committed)
+
+# Logging: show our own INFO logs on the console (e.g. 'LLM response received').
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler'},
+    },
+    'loggers': {
+        'keypoints': {'handlers': ['console'], 'level': 'INFO'},
     },
 }

@@ -67,6 +67,9 @@ public class TranscriptionController {
         return ResponseEntity.accepted().body(Map.of("jobId", jobId, "status", JobStatus.PROCESSING));
     }
 
+
+
+
     private boolean isFileAccepted(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             return false;
