@@ -1,8 +1,10 @@
 package it.devmethodologies.meetingingestor.service.impl;
 
+import it.devmethodologies.meetingingestor.model.JobStatus;
 import it.devmethodologies.meetingingestor.model.TranscriptionJob;
 import it.devmethodologies.meetingingestor.repository.JobRepository;
 import it.devmethodologies.meetingingestor.service.TranscriptionEngine;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -84,14 +86,24 @@ public class TranscriptionService {
     }
 
     public String submit(Path audioFile, String lang) {
+        return submit(audioFile, lang, TranscriptionJob.UNTITLED);
+    }
+
+    public String submit(Path audioFile, String lang, String title) {
         Objects.requireNonNull(audioFile, "Audio file should not be null");
         String id = UUID.randomUUID().toString();
-        repository.save(TranscriptionJob.processing(id));
+        repository.save(TranscriptionJob.processing(id, title));
         CompletableFuture
                 .supplyAsync(() -> engine.transcribe(audioFile, lang), executor)
                 .orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS)
                 .whenComplete((transcript, error) -> finish(id, audioFile, transcript, error));
         return id;
-
+    }
+    @PostConstruct
+    void failJobsInterruptedByRestart() {
+        for (TranscriptionJob job : repository.findByStatus(JobStatus.PROCESSING)) {
+            repository.save(job.failed("Server restarted during transcription"));
+            log.warn("Job {} was interrupted by a restart and is marked failed", job.id());
+        }
     }
 }

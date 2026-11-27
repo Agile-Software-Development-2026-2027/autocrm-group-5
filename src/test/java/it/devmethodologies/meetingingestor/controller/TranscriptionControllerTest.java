@@ -42,14 +42,14 @@ class TranscriptionControllerTest {
     // SCRUM-56: a valid audio file is saved to a temp file, passed to the service, and answered with 202 and the job id
     @Test
     void validAudioFileReturnsJobId() throws Exception {
-        when(transcriptionService.submit(any(Path.class), isNull())).thenReturn("job-123");
+        when(transcriptionService.submit(any(Path.class), isNull(), eq("recording-123.mp3"))).thenReturn("job-123");
         MockMultipartFile file = new MockMultipartFile("file", "recording-123.mp3", "audio/mpeg", new byte[]{1, 2, 3});
         mockMvc.perform(multipart("/api/transcriptions/upload").file(file))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.jobId").value("job-123"))
                 .andExpect(jsonPath("$.status").value("processing"));
         ArgumentCaptor<Path> savedFile = ArgumentCaptor.forClass(Path.class);
-        verify(transcriptionService).submit(savedFile.capture(), isNull());
+        verify(transcriptionService).submit(savedFile.capture(), isNull(), eq("recording-123.mp3"));
         assertTrue(Files.exists(savedFile.getValue()));
         Files.deleteIfExists(savedFile.getValue());
     }
@@ -61,7 +61,7 @@ class TranscriptionControllerTest {
         mockMvc.perform(multipart("/api/transcriptions/upload").file(file))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Invalid file format or file size exceeded."));
-        verify(transcriptionService, never()).submit(any(), any());
+        verify(transcriptionService, never()).submit(any(), any(), any());
     }
 
     // SCRUM-56: a file over the size limit is rejected with 400, and no job is started
@@ -72,7 +72,7 @@ class TranscriptionControllerTest {
         mockMvc.perform(multipart("/api/transcriptions/upload").file(file))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Invalid file format or file size exceeded."));
-        verify(transcriptionService, never()).submit(any(), any());
+        verify(transcriptionService, never()).submit(any(), any(), any());
     }
 
     // SCRUM-56: a request without a file is rejected with 400, and no job is started
@@ -81,7 +81,7 @@ class TranscriptionControllerTest {
         mockMvc.perform(multipart("/api/transcriptions/upload"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Invalid file format or file size exceeded."));
-        verify(transcriptionService, never()).submit(any(), any());
+        verify(transcriptionService, never()).submit(any(), any(), any());
     }
 
     // SCRUM-76: a job still processing returns 200 with status "processing" and a null transcript
