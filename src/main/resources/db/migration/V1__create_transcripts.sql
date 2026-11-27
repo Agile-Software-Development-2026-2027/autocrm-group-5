@@ -8,7 +8,6 @@ CREATE TABLE transcripts (
                              error_message VARCHAR(1000),
                              created_at    TIMESTAMP WITH TIME ZONE NOT NULL,
                              updated_at    TIMESTAMP WITH TIME ZONE NOT NULL,
-                             CONSTRAINT pk_transcripts PRIMARY KEY (id),
-                             CONSTRAINT ck_transcripts_source CHECK (source IN ('MANUAL', 'FIREFLIES')),
-                             CONSTRAINT ck_transcripts_status CHECK (status IN ('PROCESSING', 'DONE', 'FAILED'))
+                             CONSTRAINT pk_transcripts PRIMARY KEY (id)
+
 );
