@@ -20,3 +20,14 @@ class TranscriptListSerializer(serializers.ModelSerializer):
         model = Transcript
         fields = ('id', 'text', 'key_points', 'created_at')
         read_only_fields = fields
+
+# No ModelSerializer here: there is no model, only input fields to validate.
+class ExtractionRequestSerializer(serializers.Serializer):
+    transcript = serializers.CharField(max_length=200_000)
+    language = serializers.ChoiceField(
+        choices=['it', 'en'],
+        default='it',
+        error_messages={'invalid_choice': 'Language must be "it" or "en".'},
+    )
+    meetingTitle = serializers.CharField(max_length=255, required=False, allow_null=True)
+    meetingDate = serializers.DateField(required=False, allow_null=True)

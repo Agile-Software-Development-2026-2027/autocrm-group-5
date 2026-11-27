@@ -2,9 +2,14 @@ package it.devmethodologies.meetingingestor.service.impl;
 
 import it.devmethodologies.meetingingestor.model.KeyPointsTranscript;
 import it.devmethodologies.meetingingestor.model.KeyPointsTranscriptPage;
+import it.devmethodologies.meetingingestor.model.keypoint.ExtractionRequest;
+import it.devmethodologies.meetingingestor.model.keypoint.ExtractionResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.BufferingClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
@@ -17,19 +22,27 @@ import java.util.Optional;
  * Walking skeleton: it reads one transcript or a page of transcripts with their key points.
  */
 @Service
+@Slf4j
 public class KeyPointsService {
 
     private final RestClient restClient;
+    private final String apiKey;
 
     // Default = the local Django service started with run.ps1, so the backend starts without extra config.
     @Autowired
-    public KeyPointsService(@Value("${keypoints.service.url:http://127.0.0.1:8701}") String baseUrl) {
-        this(RestClient.create(baseUrl));
+    public KeyPointsService(
+            @Value("${keypoints.service.url:http://127.0.0.1:8701}") String baseUrl,
+            @Value("${keypoints.service.apiKey:local-dev-key}") String apiKey) {
+            // so buffer the body and send Content-Length instead of Transfer-Encoding: chunked.
+            BufferingClientHttpRequestFactory factory = new BufferingClientHttpRequestFactory(new SimpleClientHttpRequestFactory());
+            this.restClient = RestClient.builder().baseUrl(baseUrl).requestFactory(factory).build();
+            this.apiKey = apiKey;
     }
 
     // Separate constructor to inject a dedicated client in tests.
-    KeyPointsService(RestClient restClient) {
+    KeyPointsService(RestClient restClient, String apiKey) {
         this.restClient = restClient;
+        this.apiKey = apiKey;
     }
 
     /**
@@ -77,5 +90,16 @@ public class KeyPointsService {
         public KeyPointsUnavailableException(String message, Throwable cause) {
             super(message, cause);
         }
+    }
+
+    public ExtractionResponse extract(ExtractionRequest request) {
+        log.info("Sending request :" + request);
+        return restClient.post()
+                .uri("/api/v1/transcripts/extractions/")
+                .header("Keypoints-API-Key", apiKey)          // the internal key
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(ExtractionResponse.class);
     }
 }

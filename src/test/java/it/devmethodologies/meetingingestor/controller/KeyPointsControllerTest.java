@@ -2,6 +2,9 @@ package it.devmethodologies.meetingingestor.controller;
 
 import it.devmethodologies.meetingingestor.model.KeyPointsTranscript;
 import it.devmethodologies.meetingingestor.model.KeyPointsTranscriptPage;
+import it.devmethodologies.meetingingestor.model.keypoint.ActionPoint;
+import it.devmethodologies.meetingingestor.model.keypoint.ExtractionResponse;
+import it.devmethodologies.meetingingestor.model.keypoint.Task;
 import it.devmethodologies.meetingingestor.service.impl.KeyPointsService;
 import it.devmethodologies.meetingingestor.service.impl.KeyPointsService.KeyPointsUnavailableException;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -16,12 +20,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -99,5 +105,32 @@ class KeyPointsControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(keyPointsService, never()).listTranscripts(anyInt());
+    }
+
+    // --------------------------- POST /extractions ---------------------------
+
+    @Test
+    void extractionReturns200WithActionPointsAndTasks() throws Exception {
+        when(keyPointsService.extract(any())).thenReturn(new ExtractionResponse(
+                List.of(new ActionPoint("Sconto 10% confermato", null)),
+                List.of(new Task("Preparare contratto", null, "Laura", "2026-11-28", "HIGH")),
+                "it", "gemini-3.5-flash-lite"));
+
+        mockMvc.perform(post("/api/keypoints/extractions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"transcript\":\"Marco: confermiamo lo sconto del 10%.\",\"language\":\"it\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.actionPoints[0].title").value("Sconto 10% confermato"))
+                .andExpect(jsonPath("$.tasks[0].assignee").value("Laura"));
+    }
+
+    @Test
+    void extractionWithBlankTranscriptReturns400WithoutCallingTheService() throws Exception {
+        mockMvc.perform(post("/api/keypoints/extractions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"transcript\":\"\"}"))
+                .andExpect(status().isBadRequest());
+
+        verify(keyPointsService, never()).extract(any());
     }
 }
