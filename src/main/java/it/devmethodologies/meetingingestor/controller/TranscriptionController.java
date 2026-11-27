@@ -63,7 +63,7 @@ public class TranscriptionController {
                     .body(Map.of("error", "Could not store the uploaded file."));
         }
 
-        String jobId = transcriptionService.submit(tempFile, null);
+        String jobId = transcriptionService.submit(tempFile, null, file.getOriginalFilename());
         return ResponseEntity.accepted().body(Map.of("jobId", jobId, "status", JobStatus.PROCESSING));
     }
 
