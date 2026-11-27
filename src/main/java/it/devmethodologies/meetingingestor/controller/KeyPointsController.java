@@ -2,11 +2,8 @@ package it.devmethodologies.meetingingestor.controller;
 
 import it.devmethodologies.meetingingestor.model.KeyPointsTranscript;
 import it.devmethodologies.meetingingestor.model.KeyPointsTranscriptPage;
-import it.devmethodologies.meetingingestor.model.keypoint.ExtractionRequest;
-import it.devmethodologies.meetingingestor.model.keypoint.ExtractionResponse;
 import it.devmethodologies.meetingingestor.service.impl.KeyPointsService;
 import it.devmethodologies.meetingingestor.service.impl.KeyPointsService.KeyPointsUnavailableException;
-import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -71,11 +68,5 @@ public class KeyPointsController {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .body(Map.of("error", "The key points service is not available."));
         }
-    }
-
-
-    @PostMapping("/extractions")
-    public ResponseEntity<ExtractionResponse> extract(@Valid @RequestBody ExtractionRequest request) {
-        return ResponseEntity.ok(keyPointsService.extract(request));
     }
 }

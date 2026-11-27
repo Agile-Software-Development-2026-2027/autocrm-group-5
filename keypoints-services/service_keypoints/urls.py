@@ -16,12 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from keypoints.views import ExtractionView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 urlpatterns = [
 
     # api , versioned (keypoints)
     path('api/v1/transcripts/', include('keypoints.urls')),
+    path('api/v1/extractions/', ExtractionView.as_view()),   # POST (SCRUM-110 contract)
     path('nimda/', admin.site.urls),
 
     # Machine-readable documentation: the OpenAPI 3 document (YAML/JSON)

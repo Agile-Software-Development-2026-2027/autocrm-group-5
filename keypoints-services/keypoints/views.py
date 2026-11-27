@@ -1,13 +1,13 @@
-import json
 import secrets
 
 from django.conf import settings
 from rest_framework import generics
-from rest_framework.exceptions import APIException, AuthenticationFailed
+from rest_framework.exceptions import APIException
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from keypoints.errors import Unauthorized
 from keypoints.models import Transcript
 from keypoints.serializers import (
     ExtractionRequestSerializer,
@@ -51,18 +51,18 @@ class ExtractionView(APIView):
         serializer = ExtractionRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        raw = extract_action_items(
+        result = extract_action_items(
             data['transcript'], data['language'],
             data.get('meetingTitle'), data.get('meetingDate'),
         )
-        return Response(json.loads(raw))
+        return Response(result)
 
     def _validate_api_key(self, request: Request):
         expected_key = settings.KEYPOINTS_API_KEY
         received_key = request.headers.get('Keypoints-API-Key', '')
         # Constant-time comparison: do not leak the key through response timing
         if not secrets.compare_digest(received_key, expected_key):
-            raise AuthenticationFailed('Invalid or missing API key.')
+            raise Unauthorized()
 
 
 # ------------------------------ EXCEPTIONS --------------------------------------------

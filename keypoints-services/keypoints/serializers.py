@@ -31,3 +31,22 @@ class ExtractionRequestSerializer(serializers.Serializer):
     )
     meetingTitle = serializers.CharField(max_length=255, required=False, allow_null=True)
     meetingDate = serializers.DateField(required=False, allow_null=True)
+
+
+class ActionPointSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=120)
+    description = serializers.CharField(max_length=2000, allow_null=True, allow_blank=True, default=None)
+
+
+class TaskSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(max_length=2000, allow_null=True, allow_blank=True, default=None)
+    assignee = serializers.CharField(allow_null=True, allow_blank=True, default=None)
+    dueDate = serializers.DateField(allow_null=True, default=None)
+    priority = serializers.ChoiceField(choices=['LOW', 'MEDIUM', 'HIGH'], allow_null=True, default=None)
+
+
+class ExtractionResultSerializer(serializers.Serializer):
+    """Schema of the LLM output (SCRUM-110): the service never returns raw LLM output."""
+    actionPoints = ActionPointSerializer(many=True)
+    tasks = TaskSerializer(many=True)
