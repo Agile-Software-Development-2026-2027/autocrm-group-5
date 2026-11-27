@@ -2,6 +2,8 @@ package it.devmethodologies.meetingingestor.service.impl;
 
 import it.devmethodologies.meetingingestor.model.Transcript;
 import it.devmethodologies.meetingingestor.service.TranscriptSource;
+import it.devmethodologies.meetingingestor.model.TranscriptionJob;
+import it.devmethodologies.meetingingestor.repository.JobRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -29,11 +31,14 @@ public class MeetingService {
 
     private final TranscriptSource transcriptSource;
     private final RestClient hubSpotClient;
+    private final JobRepository jobRepository;
 
     public MeetingService(
             TranscriptSource transcriptSource,
+            JobRepository jobRepository,
             @Value("${hubspot.api.token}") String hubSpotToken) {
         this.transcriptSource = transcriptSource;
+        this.jobRepository = jobRepository;
         this.hubSpotClient = RestClient.builder()
                 .baseUrl("https://api.hubapi.com")
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + hubSpotToken)
@@ -51,13 +56,28 @@ public class MeetingService {
         String formattedText = transcript.sentences().stream()
                 .map(s -> s.speakerName() + ": " + s.text())
                 .collect(Collectors.joining("\n"));
-
+        //Store Transcript to H2
+        storeTranscript(transcript, formattedText);
 
         String uploadedFileId = uploadTranscriptFile(transcript.id(), formattedText);
         log.info("File caricato su HubSpot con ID: {}", uploadedFileId);
 
 
         createHubSpotCall(transcript, formattedText, uploadedFileId);
+    }
+    private void storeTranscript(Transcript transcript, String formattedText) {
+        try {
+            if (jobRepository.findById(transcript.id()).isPresent()) {
+                log.info("Fireflies meeting {} is already stored, not storing it again", transcript.id());
+                return;
+            }
+            String title = (transcript.title() == null || transcript.title().isBlank())
+                    ? "Fireflies meeting " + transcript.id()
+                    : transcript.title();
+            jobRepository.save(TranscriptionJob.fromFireflies(transcript.id(), title, formattedText));
+        } catch (RuntimeException e) {
+            log.error("Could not store Fireflies meeting {}", transcript.id(), e);
+        }
     }
 
     private String uploadTranscriptFile(String transcriptId, String content) {
